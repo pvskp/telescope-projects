@@ -11,7 +11,7 @@ local project_dirs = {
 local dirs = {}
 
 local function find_dirs(path)
-	local handle = io.popen("find " .. path .. " -maxdepth 1 -mindepth 1 -type d")
+	local handle = io.popen("find " .. path .. " -maxdepth 1 -mindepth 1 -type d,l")
 	if handle ~= nil then
 		local result = handle:read("*a")
 		handle:close()
