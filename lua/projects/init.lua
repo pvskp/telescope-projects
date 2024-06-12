@@ -1,52 +1,52 @@
-local pickers = require "telescope.pickers"
-local finders = require "telescope.finders"
+local pickers = require("telescope.pickers")
+local finders = require("telescope.finders")
 local conf = require("telescope.config").values
-local actions = require "telescope.actions"
-local action_state = require "telescope.actions.state"
+local actions = require("telescope.actions")
+local action_state = require("telescope.actions.state")
 
-
-local lfs = require("lfs")
-
-local repos_dir = "/home/paulov/Documents/repos"
+local project_dirs = {
+	"~/Documents/repos",
+	"~/.config",
+}
 local dirs = {}
 
-local function find_dirs(path, depth)
-  for entry in lfs.dir(path) do
-    if entry ~= "." and entry ~= ".." then
-      local full_path = path .. "/" .. entry
-      local attr = lfs.attributes(full_path)
-      if attr.mode == "directory" and depth >= 0 then
-        table.insert(dirs, full_path)
-      end
-      if attr.mode == "directory" and depth < 0 then
-        find_dirs(full_path, depth + 1)
-      end
-    end
-  end
+local function find_dirs(path)
+	local handle = io.popen("find " .. path .. " -maxdepth 1 -mindepth 1 -type d")
+	if handle ~= nil then
+		local result = handle:read("*a")
+		handle:close()
+		for dir in string.gmatch(result, "([^\n]+)") do
+			table.insert(dirs, dir)
+		end
+	end
 end
 
-find_dirs(repos_dir, 0)
+for _, v in ipairs(project_dirs) do
+	find_dirs(v)
+end
 
 local projects = function(opts)
-  opts = opts or {}
-  pickers.new(opts, {
-    prompt_title = "Projects",
+	opts = opts or {}
+	pickers
+		.new(opts, {
+			prompt_title = "Projects",
 
-    finder = finders.new_table {
-      results = dirs
-    },
+			finder = finders.new_table({
+				results = dirs,
+			}),
 
-    sorter = conf.generic_sorter(opts),
-    attach_mappings = function(prompt_bufnr, map)
-      actions.select_default:replace(function()
-        actions.close(prompt_bufnr)
-        local selection = action_state.get_selected_entry()
-        vim.cmd('cd ' .. selection[1])
-      end)
-      return true
-    end,
-
-  }):find()
+			sorter = conf.generic_sorter(opts),
+			attach_mappings = function(prompt_bufnr, map)
+				actions.select_default:replace(function()
+					actions.close(prompt_bufnr)
+					local selection = action_state.get_selected_entry()
+					vim.cmd("cd " .. selection[1])
+				end)
+				return true
+			end,
+		})
+		:find()
 end
 
+-- projects()
 return projects
